@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メンター面談シート | KG SDGsキャンパスサポーター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        .sheet-container { max-width: 850px; margin: 1rem auto 3rem; background: white; padding: 3rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .section-title { border-left: 5px solid #059669; padding-left: 1rem; margin: 2rem 0 1rem; font-weight: bold; color: #0f172a; }
+        input, textarea, select { width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 0.25rem; font-size: 14px; }
+        label { font-size: 0.875rem; font-weight: 600; color: #475569; }
+        .loading-spinner { display: none; border: 3px solid #f3f3f3; border-top: 3px solid #059669; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @media print { .no-print { display: none; } .sheet-container { box-shadow: none; margin: 0; width: 100%; } }
+    </style>
+</head>
+<body>
+
+    <div class="bg-slate-800 text-white py-2 no-print">
+        <div class="max-w-[850px] mx-auto px-4 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-grow min-w-[300px]">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">GAS連携設定:</span>
+                <input type="password" id="gas-url" placeholder="GASのウェブアプリURLを貼り付けてください" class="text-xs bg-slate-700 border-none text-white py-1 h-8 rounded mt-0">
+                <button onclick="saveSettings()" class="whitespace-nowrap text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded h-8 transition">URL保存</button>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="saveAsPDF()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded h-8 transition font-bold">PDF保存</button>
+                <button onclick="sendToSheet()" id="send-btn" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1 rounded h-8 transition font-bold flex items-center gap-2">
+                    <span id="btn-text">シート送信</span>
+                    <div id="spinner" class="loading-spinner"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pdf-content" class="sheet-container">
+        <div class="text-center mb-8">
+            <span class="text-xs font-bold text-emerald-600 tracking-widest uppercase">KG SDGs CAMPUS SUPPORTER</span>
+            <h1 class="text-3xl font-bold text-slate-900 mt-1">メンター面談シート</h1>
+            <p class="text-slate-400 text-xs mt-2 italic">Supporting your journey in our community.</p>
+        </div>
+
+        <div class="section-title">1. 基本情報</div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div><label>実施日</label><input type="date" id="date"></div>
+            <div><label>学年・学部</label><input type="text" id="faculty" placeholder="例：2年 総合政策"></div>
+            <div><label>メンター</label><input type="text" id="mentor" placeholder="氏名"></div>
+            <div><label>新メンバー</label><input type="text" id="mentee" placeholder="氏名"></div>
+        </div>
+
+        <div class="section-title">2. コンディション</div>
+        <div class="mb-4">
+            <label>活動の充実度（5段階）</label>
+            <select id="satisfaction">
+                <option value="5">5 - 非常に充実。やりたいことができている</option>
+                <option value="4">4 - 楽しい。馴染めている</option>
+                <option value="3" selected>3 - 普通。可もなく不可もなく</option>
+                <option value="2">2 - 少し不安。相談したいことがある</option>
+                <option value="1">1 - ギャップあり。継続に不安</option>
+            </select>
+        </div>
+        <div class="mb-4">
+            <label>学業・生活とのバランス（テストや私生活の忙しさ）</label>
+            <textarea id="balance" placeholder="無理なく続けられそうか記入"></textarea>
+        </div>
+
+        <div class="section-title">3. 内容と課題</div>
+        <div class="mb-4">
+            <label>最近取り組んだこと・感想</label>
+            <textarea id="activities" placeholder="具体的な作業内容や、得られた学び"></textarea>
+        </div>
+        <div class="mb-4">
+            <label>困っていること・不足しているもの</label>
+            <textarea id="issues" placeholder="操作方法、知識、人間関係の悩みなど"></textarea>
+        </div>
+
+        <div class="section-title">4. アクション</div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label>本人の約束</label>
+                <textarea id="action_mentee" placeholder="次までに意識すること"></textarea>
+            </div>
+            <div>
+                <label>メンターの支援</label>
+                <textarea id="action_mentor" placeholder="環境調整、レクチャーなど"></textarea>
+            </div>
+        </div>
+        
+        <div class="mt-12 text-center text-slate-300 text-[10px] font-bold tracking-widest">
+            © KG SDGs CAMPUS SUPPORTER OFFICIAL TOOL
+        </div>
+    </div>
+
+    <script>
+        window.onload = () => {
+            document.getElementById('gas-url').value = localStorage.getItem('kg_gas_url') || '';
+            // 今日の日付をデフォルトセット
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = today;
+        };
+
+        function saveSettings() {
+            const url = document.getElementById('gas-url').value;
+            if(!url.startsWith('https://')) return alert('有効なURLを入力してください');
+            localStorage.setItem('kg_gas_url', url);
+            alert('設定を保存しました。このブラウザで次回から自動適用されます。');
+        }
+
+        async function sendToSheet() {
+            const url = document.getElementById('gas-url').value;
+            if(!url) return alert('先に上部の設定バーでGASのURLを設定してください');
+
+            const btn = document.getElementById('send-btn');
+            const spinner = document.getElementById('spinner');
+            const btnText = document.getElementById('btn-text');
+
+            // データの収集
+            const data = {
+                date: document.getElementById('date').value,
+                faculty: document.getElementById('faculty').value,
+                mentor: document.getElementById('mentor').value,
+                mentee: document.getElementById('mentee').value,
+                satisfaction: document.getElementById('satisfaction').value,
+                balance: document.getElementById('balance').value,
+                activities: document.getElementById('activities').value,
+                issues: document.getElementById('issues').value,
+                action_mentee: document.getElementById('action_mentee').value,
+                action_mentor: document.getElementById('action_mentor').value
+            };
+
+            try {
+                btn.disabled = true;
+                spinner.style.display = 'block';
+                btnText.innerText = '送信中...';
+
+                // no-corsモードでの送信（GASの制限回避）
+                await fetch(url, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                alert('送信リクエストを送信しました。\nスプレッドシートを確認してください。');
+            } catch (e) {
+                alert('エラーが発生しました: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.innerText = 'シート送信';
+            }
+        }
+
+        function saveAsPDF() {
+            const element = document.getElementById('pdf-content');
+            const mentee = document.getElementById('mentee').value || '面談資料';
+            const date = document.getElementById('date').value;
+            
+            // 入力値を表示用に反映
+            const inputs = element.querySelectorAll('input, textarea, select');
+            inputs.forEach(el => {
+                if(el.tagName === 'SELECT') {
+                    const selectedText = el.options[el.selectedIndex].text;
+                    el.setAttribute('data-pdf-val', selectedText);
+                } else {
+                    el.setAttribute('data-pdf-val', el.value);
+                }
+            });
+
+            html2pdf().set({
+                margin: 10,
+                filename: `面談記録_${mentee}_${date}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(element).save();
+        }
+    </script>
+</body>
+</html>
